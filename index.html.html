@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PPG Y2K Interactive - Micro:bit Controller</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- TensorFlow.js and Teachable Machine Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+  <!-- Google Fonts Y2K Style -->
+  <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&family=Fredoka One&family=VT323&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Comic Neue', cursive, sans-serif;
+      background: linear-gradient(135deg, #a6c0fe 0%, #f68084 100%);
+      color: #333;
+    }
+    .font-y2k {
+      font-family: 'VT323', monospace;
+    }
+    .font-header {
+      font-family: 'Fredoka One', cursive;
+    }
+    .retro-border {
+      border: 3px solid #ff4081;
+      box-shadow: 4px 4px 0px #880e4f;
+    }
+    .retro-box {
+      background: #ffffff;
+      border: 2px solid #ff80ab;
+      box-shadow: 3px 3px 0px #c2185b;
+    }
+    /* Custom Scrollbar Y2K Style */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f8bbd0;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #ec407a;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-2 md:p-4 flex flex-col items-center select-none">
+
+  <!-- TOP AD BANNER -->
+  <div class="w-full max-w-6xl bg-gradient-to-r from-pink-300 via-purple-300 to-yellow-200 border-2 border-pink-500 rounded-lg p-2 mb-3 flex items-center justify-between shadow-md">
+    <div class="flex items-center space-x-3">
+      <div class="w-12 h-12 bg-pink-400 rounded-full border-2 border-white flex items-center justify-center font-bold text-white text-xl animate-bounce">
+        PPG!
+      </div>
+      <div>
+        <h1 class="text-pink-700 font-header text-lg md:text-xl">Print Fun Stuff!</h1>
+        <p class="text-xs text-pink-900 font-bold">★ PPG X MARIO & MINION SPECIAL EDITION ★</p>
+      </div>
+    </div>
+    <div class="hidden sm:flex space-x-2">
+      <span class="px-3 py-1 bg-yellow-300 text-pink-800 text-xs font-bold rounded-full border border-pink-400">AD 2000s</span>
+      <span class="px-3 py-1 bg-pink-400 text-white text-xs font-bold rounded-full border border-white">Fun Club</span>
+    </div>
+  </div>
+
+  <!-- MAIN NAVIGATION TABS BANNER -->
+  <div class="w-full max-w-6xl bg-pink-600 border-2 border-pink-800 rounded-t-xl p-2 flex flex-wrap items-center justify-between text-white shadow-lg">
+    <div class="flex items-center space-x-2">
+      <span class="text-yellow-300 font-header text-xl md:text-2xl tracking-wider">powerpuff-girls.com™</span>
+      <span class="text-xs bg-pink-800 px-2 py-0.5 rounded text-pink-200">v2.5</span>
+    </div>
+    <div class="flex space-x-1 md:space-x-2 text-xs md:text-sm font-bold">
+      <button onclick="scrollToSection('gameplay-section')" class="bg-yellow-300 hover:bg-yellow-200 text-pink-900 px-3 py-1 rounded-t border-t border-l border-r border-pink-200 cursor-pointer">★ Mini Game</button>
+      <button class="bg-pink-500 hover:bg-pink-300 text-white px-3 py-1 rounded-t">my Friends</button>
+      <button class="bg-pink-500 hover:bg-pink-300 text-white px-3 py-1 rounded-t">my Shows</button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <div class="w-full max-w-6xl bg-sky-200 border-4 border-pink-500 rounded-b-2xl p-3 md:p-6 shadow-2xl flex flex-col space-y-6">
+
+    <!-- TOP HEADER UTILITY BAR -->
+    <div class="bg-gradient-to-r from-red-400 via-pink-400 to-purple-400 rounded-lg p-2 flex items-center justify-between text-white text-xs font-bold border border-white shadow-sm">
+      <span>visit more PPG games at <strong class="underline">PowerpuffGirls.com</strong></span>
+      <div class="flex space-x-2">
+        <button id="connectBtn" onclick="connectMicrobit()" class="bg-yellow-300 hover:bg-yellow-400 text-pink-900 px-3 py-1 rounded shadow border border-pink-600 transition duration-200 flex items-center space-x-1 font-bold">
+          <span>🔌 Connect Micro:bit</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- BLUETOOTH PERMISSION / IFRAME NOTICE MODAL (HIDDEN BY DEFAULT) -->
+    <div id="btModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="bg-white border-4 border-pink-500 rounded-2xl max-w-md w-full p-5 shadow-2xl text-gray-800 relative animate-bounce-short">
+        <div class="flex justify-between items-center mb-3 border-b-2 border-pink-200 pb-2">
+          <h3 class="font-header text-lg text-pink-700 flex items-center gap-2">
+            <span>⚠️ Bluetooth Permission Info</span>
+          </h3>
+          <button onclick="closeBtModal()" class="text-pink-700 hover:text-pink-900 font-bold text-lg px-2">✕</button>
+        </div>
+        <p class="text-xs text-gray-700 leading-relaxed mb-3">
+          Web Bluetooth API is restricted inside sandboxed preview frames (iframe security policy).
+        </p>
+        <div class="bg-pink-50 p-3 rounded-lg border border-pink-300 text-xs text-pink-900 font-medium mb-4 space-y-1">
+          <p><strong>✨ Simulated Mode Active:</strong> You can still play the game, test gestures, and watch the LED screen update on the PPG iPad display!</p>
+          <p>To connect a real physical micro:bit, open this project directly in its own top-level browser tab over HTTPS (Chrome/Edge).</p>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button onclick="closeBtModal()" class="bg-pink-500 hover:bg-pink-600 text-white font-bold text-xs px-4 py-2 rounded-lg border border-pink-700 shadow">
+            Got it, continue in Simulated Mode! 🚀
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 1: AI CAMERA & RETRO PHONE (SIDE BY SIDE NOW) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+      
+      <!-- LEFT: CAMERA & GESTURE CONTROLS (6 COLS) -->
+      <div class="lg:col-span-6 bg-white border-2 border-pink-400 p-4 rounded-xl shadow flex flex-col items-center justify-between">
+        <div class="w-full flex justify-between items-center mb-2">
+          <span class="pink-600 font-header text-sm md:text-base text-pink-700">📸 Teachable Machine AI Cam</span>
+          <span id="aiStatus" class="text-[10px] bg-yellow-200 text-yellow-800 px-2.5 py-0.5 rounded font-bold">Initializing WebCam...</span>
+        </div>
+
+        <!-- Canvas/Webcam Container -->
+        <div id="webcam-container" class="w-full max-w-[320px] h-[220px] bg-black rounded-lg border-2 border-pink-300 overflow-hidden flex items-center justify-center relative my-1 shadow-inner">
+        </div>
+
+        <!-- Gesture Detection Cards -->
+        <div class="w-full mt-3 grid grid-cols-2 gap-3 text-center">
+          <div id="box-oke" class="p-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 transition-all duration-300 flex flex-col justify-between">
+            <div>
+              <div class="text-xs font-bold text-gray-600 flex justify-between items-center">
+                <span>GESTURE: OKE</span>
+                <span id="badge-oke" class="text-[9px] bg-pink-200 text-pink-800 px-1.5 py-0.5 rounded font-bold">READY</span>
+              </div>
+              <div id="score-oke" class="text-2xl font-bold text-pink-500 my-1">0%</div>
+            </div>
+            <!-- Progress Bar -->
+            <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden border border-pink-300">
+              <div id="bar-oke" class="bg-gradient-to-r from-pink-400 to-pink-600 h-2.5 rounded-full transition-all duration-150 ease-out" style="width: 0%"></div>
+            </div>
+            <div class="text-[10px] text-gray-500 mt-1">Target: Icon ❤️ / Game Boost</div>
+          </div>
+
+          <div id="box-peace" class="p-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 transition-all duration-300 flex flex-col justify-between">
+            <div>
+              <div class="text-xs font-bold text-gray-600 flex justify-between items-center">
+                <span>GESTURE: PEACE</span>
+                <span id="badge-peace" class="text-[9px] bg-green-200 text-green-800 px-1.5 py-0.5 rounded font-bold">READY</span>
+              </div>
+              <div id="score-peace" class="text-2xl font-bold text-green-500 my-1">0%</div>
+            </div>
+            <!-- Progress Bar -->
+            <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden border border-green-300">
+              <div id="bar-peace" class="bg-gradient-to-r from-green-400 to-emerald-600 h-2.5 rounded-full transition-all duration-150 ease-out" style="width: 0%"></div>
+            </div>
+            <div class="text-[10px] text-gray-500 mt-1">Target: Icon 🙂 / Game Shield</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: RETRO iPAD / TABLET DISPLAY (6 COLS) -->
+      <div class="lg:col-span-6 bg-gradient-to-b from-purple-500 via-pink-500 to-red-500 rounded-[32px] p-4 md:p-5 border-4 border-pink-700 shadow-xl flex flex-col items-center justify-between relative">
+        
+        <!-- iPad Top Camera Sensor -->
+        <div class="w-full flex justify-center items-center gap-2 mb-2">
+          <div class="w-2.5 h-2.5 bg-black rounded-full border border-pink-300"></div>
+          <div class="w-1.5 h-1.5 bg-pink-900 rounded-full"></div>
+        </div>
+
+        <!-- TABLET SCREEN CONTAINER -->
+        <div class="w-full bg-sky-200 border-4 border-pink-300 rounded-2xl p-4 flex flex-col items-center shadow-inner relative flex-1 justify-center">
+          
+          <div class="w-full flex justify-between items-center text-xs font-bold text-sky-900 border-b border-sky-400 pb-1.5 mb-2">
+            <span class="flex items-center space-x-1">
+              <span>📱 PPG iPad Pro</span>
+              <span class="bg-pink-400 text-white text-[9px] px-1.5 py-0.5 rounded-full">Y2K OS</span>
+            </span>
+            <span id="bleStatus" class="text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">Simulated Mode ⚡</span>
+          </div>
+
+          <div class="text-center my-1">
+            <h3 class="text-sm font-bold text-pink-800 uppercase tracking-wide">Micro:bit Screen Display</h3>
+            <p class="text-[10px] text-sky-800">5x5 LED Matrix Output</p>
+          </div>
+
+          <!-- MICRO:BIT 5x5 LED MATRIX (LARGER FOR IPAD) -->
+          <div class="bg-gray-900 p-3.5 rounded-2xl border-4 border-purple-800 shadow-xl my-2">
+            <div id="led-matrix" class="grid grid-cols-5 gap-2">
+              <!-- 25 LEDs generated dynamically -->
+            </div>
+          </div>
+
+          <!-- Active Icon Text -->
+          <div class="text-center mt-1 bg-white/70 px-4 py-1 rounded-full border border-pink-300 shadow-sm">
+            <span class="text-[10px] font-bold text-sky-900">ACTIVE ICON: </span>
+            <span id="activeIconName" class="text-sm font-header text-pink-700">NONE</span>
+          </div>
+        </div>
+
+        <!-- iPad Home Bar / Bottom Dock -->
+        <div class="w-full mt-3 flex items-center justify-between px-4">
+          <div class="w-8 h-8 bg-pink-400/80 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow">
+            🍎
+          </div>
+          <div class="w-24 h-1.5 bg-white/80 rounded-full shadow-inner"></div>
+          <div class="w-8 h-8 bg-purple-400/80 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow">
+            ⚡
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- SECTION 2: CHARACTER STRIP & POSTCARD (MOVED BELOW AS REQUESTED) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+      
+      <!-- PHOTO STRIP (4 COLS) -->
+      <div class="lg:col-span-4 bg-pink-100 p-3 rounded-xl border-2 border-pink-400 flex flex-col items-center space-y-2 shadow">
+        <div class="text-pink-700 font-header text-sm">PPG Character Strip!</div>
+        
+        <div class="w-full bg-white border border-pink-300 p-2 rounded-lg space-y-2">
+          <!-- Blossom Mario -->
+          <div class="relative bg-pink-200 p-1.5 rounded border border-pink-400 text-center flex items-center space-x-2">
+            <svg viewBox="0 0 100 100" class="w-14 h-14 shrink-0">
+              <circle cx="50" cy="50" r="40" fill="#f8bbd0" />
+              <path d="M20 40 Q50 10 80 40 Q50 35 20 40" fill="#e91e63" />
+              <rect x="35" y="20" width="30" height="15" rx="5" fill="#e91e63" />
+              <text x="50" y="32" font-size="12" fill="white" font-weight="bold" text-anchor="middle">M</text>
+              <circle cx="38" cy="55" r="4" fill="#333" />
+              <circle cx="62" cy="55" r="4" fill="#333" />
+              <path d="M 40 70 Q 50 80 60 70" stroke="#e91e63" stroke-width="3" fill="none" />
+            </svg>
+            <div class="text-left">
+              <span class="text-xs font-bold text-pink-900 block">Blossom (Mario)</span>
+              <span class="text-[10px] text-pink-700">Leader & Speed Booster</span>
+            </div>
+          </div>
+
+          <!-- Buttercup Luigi -->
+          <div class="relative bg-green-100 p-1.5 rounded border border-green-400 text-center flex items-center space-x-2">
+            <svg viewBox="0 0 100 100" class="w-14 h-14 shrink-0">
+              <circle cx="50" cy="50" r="40" fill="#c8e6c9" />
+              <path d="M20 40 Q50 10 80 40 Q50 35 20 40" fill="#4caf50" />
+              <rect x="35" y="20" width="30" height="15" rx="5" fill="#4caf50" />
+              <text x="50" y="32" font-size="12" fill="white" font-weight="bold" text-anchor="middle">L</text>
+              <circle cx="38" cy="55" r="4" fill="#333" />
+              <circle cx="62" cy="55" r="4" fill="#333" />
+              <path d="M 40 70 Q 50 65 60 70" stroke="#2e7d32" stroke-width="3" fill="none" />
+            </svg>
+            <div class="text-left">
+              <span class="text-xs font-bold text-green-900 block">Buttercup (Luigi)</span>
+              <span class="text-[10px] text-green-700">Tough Fighter Shield</span>
+            </div>
+          </div>
+
+          <!-- Bubbles Minion -->
+          <div class="relative bg-yellow-100 p-1.5 rounded border border-yellow-400 text-center flex items-center space-x-2">
+            <svg viewBox="0 0 100 100" class="w-14 h-14 shrink-0">
+              <circle cx="50" cy="50" r="40" fill="#fff9c4" />
+              <rect x="20" y="42" width="60" height="10" fill="#757575" />
+              <circle cx="50" cy="47" r="16" fill="#e0e0e0" stroke="#616161" stroke-width="3" />
+              <circle cx="50" cy="47" r="10" fill="#fff" />
+              <circle cx="50" cy="47" r="4" fill="#0288d1" />
+              <path d="M 40 70 Q 50 82 60 70" stroke="#fbc02d" stroke-width="3" fill="none" />
+            </svg>
+            <div class="text-left">
+              <span class="text-xs font-bold text-yellow-900 block">Bubbles (Minion)</span>
+              <span class="text-[10px] text-yellow-800">Sweet Banana Magnet</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- POSTCARD (8 COLS) -->
+      <div class="lg:col-span-8 bg-yellow-50 border-2 border-yellow-400 p-4 rounded-xl relative shadow flex flex-col justify-between min-h-[220px]">
+        <div class="absolute -top-3 left-4 bg-orange-400 text-white text-xs font-bold px-3 py-0.5 rounded-full border border-orange-600">
+          Postcards From Townsville!
+        </div>
+        
+        <!-- Stamp -->
+        <div class="absolute top-3 right-3 w-12 h-14 border-2 border-dashed border-red-400 bg-white p-1 flex flex-col items-center justify-center text-[9px] text-red-500 font-bold">
+          <span>CALIFORNIA</span>
+          <span class="text-[14px]">★</span>
+          <span>2000s</span>
+        </div>
+
+        <p class="text-xs sm:text-sm text-gray-700 leading-relaxed mt-3 font-medium">
+          Hey girls! We dressed up as Mario, Luigi, and Minion! We can send icons straight to our <strong>BBC micro:bit</strong> using hand gestures. You can also test your gestures live in our new Townsville Sky Rush game down below!
+        </p>
+
+        <div class="mt-4 p-3 bg-white/80 rounded-lg border border-yellow-300 flex flex-wrap justify-between items-center gap-2">
+          <div class="text-xs font-bold text-pink-600">
+            Show <span class="bg-pink-200 text-pink-900 px-2 py-0.5 rounded border border-pink-300">"OKE"</span> for Heart Icon ❤️ & Boost!
+          </div>
+          <div class="text-xs font-bold text-green-600">
+            Show <span class="bg-green-200 text-green-900 px-2 py-0.5 rounded border border-green-300">"PEACE"</span> for Happy Icon 🙂 & Shield!
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- SECTION 3: NEW INTERACTIVE PPG MINI-GAME -->
+    <div id="gameplay-section" class="bg-gradient-to-r from-purple-200 via-pink-200 to-sky-200 border-4 border-pink-400 rounded-2xl p-4 shadow-lg flex flex-col items-center">
+      
+      <div class="w-full flex flex-wrap justify-between items-center mb-3 border-b-2 border-pink-300 pb-2">
+        <div>
+          <h2 class="text-lg md:text-xl font-header text-pink-700 flex items-center space-x-2">
+            <span>🎮 PPG Townsville Sky Rush Mini-Game</span>
+          </h2>
+          <p class="text-xs text-purple-900 font-bold">Fly around, collect stars, and use hand gestures to trigger powers!</p>
+        </div>
+        <div class="flex items-center space-x-3 text-xs font-bold mt-2 sm:mt-0">
+          <span class="bg-pink-500 text-white px-3 py-1 rounded-full border border-white">Score: <strong id="gameScore">0</strong></span>
+          <span class="bg-purple-600 text-white px-3 py-1 rounded-full border border-white">Power: <strong id="gamePower">NONE</strong></span>
+        </div>
+      </div>
+
+      <!-- Game Canvas Window -->
+      <div class="relative w-full max-w-2xl bg-sky-300 border-4 border-pink-500 rounded-xl overflow-hidden shadow-inner">
+        <canvas id="gameCanvas" width="600" height="300" class="w-full h-auto block bg-gradient-to-b from-sky-300 to-indigo-200 cursor-pointer"></canvas>
+        
+        <!-- Overlay start overlay -->
+        <div id="gameOverlay" class="absolute inset-0 bg-pink-950/70 backdrop-blur-sm flex flex-col items-center justify-center text-white p-4 text-center">
+          <h3 class="text-2xl font-header text-yellow-300 mb-2">TOWNSVILLE SKY RUSH!</h3>
+          <p class="text-xs md:text-sm max-w-md mb-4 text-pink-100">
+            Click / Tap screen or press <strong class="text-yellow-300">SPACE</strong> to jump!
+            Use <strong class="text-pink-300">OKE gesture</strong> for Speed Boost and <strong class="text-green-300">PEACE gesture</strong> for Star Shield!
+          </p>
+          <button onclick="startGame()" class="bg-yellow-400 hover:bg-yellow-300 text-pink-900 font-header text-lg px-6 py-2 rounded-full border-2 border-white shadow-lg transform transition hover:scale-105">
+            START PLAYING! 🚀
+          </button>
+        </div>
+      </div>
+
+      <!-- Game Controls Bar -->
+      <div class="w-full max-w-2xl mt-3 flex justify-between items-center text-xs font-bold text-pink-900 bg-white/70 backdrop-blur p-2 rounded-lg border border-pink-300">
+        <div class="flex space-x-2">
+          <button onclick="changeCharacter(0)" class="px-2.5 py-1 bg-pink-200 hover:bg-pink-300 text-pink-900 rounded border border-pink-400">Blossom (Mario)</button>
+          <button onclick="changeCharacter(1)" class="px-2.5 py-1 bg-green-200 hover:bg-green-300 text-green-900 rounded border border-green-400">Buttercup (Luigi)</button>
+          <button onclick="changeCharacter(2)" class="px-2.5 py-1 bg-yellow-200 hover:bg-yellow-300 text-yellow-900 rounded border border-yellow-400">Bubbles (Minion)</button>
+        </div>
+        <button onclick="triggerGameJump()" class="bg-pink-500 hover:bg-pink-600 text-white px-4 py-1 rounded shadow border border-pink-700">
+          JUMP ⬆️
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="mt-4 text-center text-xs text-white font-bold drop-shadow">
+    © 2000s Powerpuff Girls Y2K Micro:bit Controller. Powered by Teachable Machine & Web Bluetooth API.
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // Teachable Machine Model URL
+    const MODEL_URL = 'https://teachablemachine.withgoogle.com/models/Ekt1iVvP6/';
+
+    let model, webcam, maxPredictions;
+    let currentGesture = '';
+
+    // Web Bluetooth Variables for BBC micro:bit
+    let bluetoothDevice;
+    let uartCharacteristic;
+
+    // Micro:bit 5x5 LED Icons
+    const ICON_HEART = [
+      0,1,0,1,0,
+      1,1,1,1,1,
+      1,1,1,1,1,
+      0,1,1,1,0,
+      0,0,1,0,0
+    ];
+
+    const ICON_HAPPY = [
+      0,0,0,0,0,
+      0,1,0,1,0,
+      0,0,0,0,0,
+      1,0,0,0,1,
+      0,1,1,1,0
+    ];
+
+    // Initialize LED Matrix UI
+    const matrixContainer = document.getElementById('led-matrix');
+    function createMatrix() {
+      matrixContainer.innerHTML = '';
+      for (let i = 0; i < 25; i++) {
+        const led = document.createElement('div');
+        led.id = `led-${i}`;
+        led.className = 'w-3 h-3 rounded-full bg-red-950 border border-gray-800 transition-colors duration-200';
+        matrixContainer.appendChild(led);
+      }
+    }
+    createMatrix();
+
+    function renderLEDs(pattern) {
+      for (let i = 0; i < 25; i++) {
+        const led = document.getElementById(`led-${i}`);
+        if (pattern[i] === 1) {
+          led.className = 'w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] border border-red-300';
+        } else {
+          led.className = 'w-3 h-3 rounded-full bg-red-950 border border-gray-800';
+        }
+      }
+    }
+
+    // Initialize Teachable Machine Classifier and Webcam
+    async function initAI() {
+      const modelURL = MODEL_URL + 'model.json';
+      const metadataURL = MODEL_URL + 'metadata.json';
+
+      try {
+        const statusEl = document.getElementById('aiStatus');
+        statusEl.innerText = 'Loading Model...';
+        statusEl.className = 'text-[10px] bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded font-bold';
+
+        // Load the model and metadata
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+
+        // Setup Webcam
+        const flip = true;
+        webcam = new tmImage.Webcam(320, 220, flip);
+        await webcam.setup();
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+
+        // Append webcam canvas to DOM
+        const container = document.getElementById('webcam-container');
+        container.innerHTML = '';
+        container.appendChild(webcam.canvas);
+
+        statusEl.innerText = 'Model Ready & Active! 🚀';
+        statusEl.className = 'text-[10px] bg-green-200 text-green-800 px-2 py-0.5 rounded font-bold';
+      } catch (err) {
+        console.error('Failed to load Teachable Machine model:', err);
+        const statusEl = document.getElementById('aiStatus');
+        statusEl.innerText = 'Error Loading Cam/Model';
+        statusEl.className = 'text-[10px] bg-red-200 text-red-800 px-2 py-0.5 rounded font-bold';
+      }
+    }
+
+    async function loop() {
+      webcam.update();
+      await predict();
+      window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+      if (!model || !webcam) return;
+      const prediction = await model.predict(webcam.canvas);
+
+      let okeScore = 0;
+      let peaceScore = 0;
+
+      for (let i = 0; i < maxPredictions; i++) {
+        const label = (prediction[i].className || '').toLowerCase().trim();
+        if (label === 'oke' || label === 'ok') {
+          okeScore = prediction[i].probability;
+        } else if (label === 'peace') {
+          peaceScore = prediction[i].probability;
+        }
+      }
+
+      // Calculate Percentages
+      const okePercent = Math.round(okeScore * 100);
+      const peacePercent = Math.round(peaceScore * 100);
+
+      // Update Scores & Dynamic Progress Bars in Real Time
+      const scoreOkeEl = document.getElementById('score-oke');
+      const scorePeaceEl = document.getElementById('score-peace');
+      const barOkeEl = document.getElementById('bar-oke');
+      const barPeaceEl = document.getElementById('bar-peace');
+      
+      if (scoreOkeEl) scoreOkeEl.innerText = okePercent + '%';
+      if (scorePeaceEl) scorePeaceEl.innerText = peacePercent + '%';
+      if (barOkeEl) barOkeEl.style.width = okePercent + '%';
+      if (barPeaceEl) barPeaceEl.style.width = peacePercent + '%';
+
+      // Gesture Trigger Logic & UI Badges
+      const okeBox = document.getElementById('box-oke');
+      const peaceBox = document.getElementById('box-peace');
+      const badgeOke = document.getElementById('badge-oke');
+      const badgePeace = document.getElementById('badge-peace');
+
+      if (okeScore > 0.5) {
+        if (currentGesture !== 'oke') {
+          currentGesture = 'oke';
+          onGestureDetected('oke');
+        }
+        if (okeBox) okeBox.className = 'p-2.5 rounded-lg border-2 border-pink-500 bg-pink-100 shadow-lg scale-105 transition-all duration-200 flex flex-col justify-between';
+        if (peaceBox) peaceBox.className = 'p-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 flex flex-col justify-between';
+        if (badgeOke) {
+          badgeOke.innerText = 'ACTIVE 🔥';
+          badgeOke.className = 'text-[9px] bg-pink-500 text-white px-1.5 py-0.5 rounded font-bold animate-pulse';
+        }
+        if (badgePeace) {
+          badgePeace.innerText = 'READY';
+          badgePeace.className = 'text-[9px] bg-green-200 text-green-800 px-1.5 py-0.5 rounded font-bold';
+        }
+      } else if (peaceScore > 0.5) {
+        if (currentGesture !== 'peace') {
+          currentGesture = 'peace';
+          onGestureDetected('peace');
+        }
+        if (peaceBox) peaceBox.className = 'p-2.5 rounded-lg border-2 border-green-500 bg-green-100 shadow-lg scale-105 transition-all duration-200 flex flex-col justify-between';
+        if (okeBox) okeBox.className = 'p-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 flex flex-col justify-between';
+        if (badgePeace) {
+          badgePeace.innerText = 'ACTIVE 🔥';
+          badgePeace.className = 'text-[9px] bg-green-500 text-white px-1.5 py-0.5 rounded font-bold animate-pulse';
+        }
+        if (badgeOke) {
+          badgeOke.innerText = 'READY';
+          badgeOke.className = 'text-[9px] bg-pink-200 text-pink-800 px-1.5 py-0.5 rounded font-bold';
+        }
+      } else {
+        if (okeBox) okeBox.className = 'p-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 flex flex-col justify-between';
+        if (peaceBox) peaceBox.className = 'p-2.5 rounded-lg border-2 border-gray-300 bg-gray-50 flex flex-col justify-between';
+        if (badgeOke) {
+          badgeOke.innerText = 'READY';
+          badgeOke.className = 'text-[9px] bg-pink-200 text-pink-800 px-1.5 py-0.5 rounded font-bold';
+        }
+        if (badgePeace) {
+          badgePeace.innerText = 'READY';
+          badgePeace.className = 'text-[9px] bg-green-200 text-green-800 px-1.5 py-0.5 rounded font-bold';
+        }
+      }
+    }
+
+    // Start AI initialization on page load
+    window.addEventListener('load', () => {
+      initAI();
+      initGame();
+    });
+
+    // Action Triggered On Gesture Detection
+    function onGestureDetected(gesture) {
+      const activeIconText = document.getElementById('activeIconName');
+
+      if (gesture === 'oke') {
+        activeIconText.innerText = 'HEART (OKE)';
+        activeIconText.className = 'text-sm font-header text-pink-600';
+        renderLEDs(ICON_HEART);
+        sendToMicrobit('OKE\n');
+        activateGamePower('BOOST');
+      } else if (gesture === 'peace') {
+        activeIconText.innerText = 'HAPPY (PEACE)';
+        activeIconText.className = 'text-sm font-header text-green-600';
+        renderLEDs(ICON_HAPPY);
+        sendToMicrobit('PEACE\n');
+        activateGamePower('SHIELD');
+      }
+    }
+
+    // WEB BLUETOOTH MICRO:BIT CONNECTION
+    const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+    const UART_TX_CHARACTERISTIC_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+
+    function showBtModal() {
+      const modal = document.getElementById('btModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeBtModal() {
+      const modal = document.getElementById('btModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function connectMicrobit() {
+      // Check if navigator.bluetooth exists
+      if (!navigator.bluetooth) {
+        alert("Web Bluetooth API is not supported by this browser. Please use Chrome or Edge.");
+        return;
+      }
+
+      try {
+        document.getElementById('bleStatus').innerText = 'Connecting...';
+        document.getElementById('bleStatus').className = 'text-yellow-600 font-bold bg-yellow-100 px-2 py-0.5 rounded-full';
+
+        bluetoothDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ namePrefix: 'BBC micro:bit' }],
+          optionalServices: [UART_SERVICE_UUID]
+        });
+
+        const server = await bluetoothDevice.gatt.connect();
+        const service = await server.getPrimaryService(UART_SERVICE_UUID);
+        uartCharacteristic = await service.getCharacteristic(UART_TX_CHARACTERISTIC_UUID);
+
+        document.getElementById('bleStatus').innerText = 'Connected ⚡';
+        document.getElementById('bleStatus').className = 'text-green-700 font-bold bg-green-100 px-2 py-0.5 rounded-full';
+        document.getElementById('connectBtn').innerHTML = '<span>✅ Micro:bit Connected</span>';
+        document.getElementById('connectBtn').className = 'bg-green-300 text-green-900 px-3 py-1 rounded shadow border border-green-600 font-bold text-xs';
+
+      } catch (error) {
+        console.warn('Bluetooth Connection Error or Restricted Environment:', error);
+        
+        // Handle iframe permissions policy restriction gracefully
+        if (error.name === 'SecurityError' || error.message.includes('permissions policy') || error.message.includes('disallowed')) {
+          document.getElementById('bleStatus').innerText = 'Simulated Mode ⚡';
+          document.getElementById('bleStatus').className = 'text-purple-700 font-bold bg-purple-100 px-2 py-0.5 rounded-full';
+          showBtModal();
+        } else {
+          document.getElementById('bleStatus').innerText = 'Failed';
+          document.getElementById('bleStatus').className = 'text-red-600 font-bold bg-red-100 px-2 py-0.5 rounded-full';
+        }
+      }
+    }
+
+    function sendToMicrobit(message) {
+      if (uartCharacteristic) {
+        const encoder = new TextEncoder();
+        uartCharacteristic.writeValue(encoder.encode(message))
+          .then(() => console.log('Sent to micro:bit:', message))
+          .catch(err => console.error('Send error:', err));
+      } else {
+        console.log('[Simulated Micro:bit Transmission]:', message.trim());
+      }
+    }
+
+    function scrollToSection(id) {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    /* ----------------------------------------------------
+       TOWNSVILLE SKY RUSH - PPG MINI GAME LOGIC
+    ------------------------------------------------------- */
+    let canvas, ctx;
+    let gameRunning = false;
+    let score = 0;
+    let characterIdx = 0; // 0: Blossom, 1: Buttercup, 2: Bubbles
+    let activePower = 'NONE';
+    let powerTimer = 0;
+
+    const player = {
+      x: 80,
+      y: 150,
+      vy: 0,
+      radius: 20,
+      gravity: 0.4,
+      jumpForce: -7.5
+    };
+
+    let collectibles = [];
+    let clouds = [];
+
+    function initGame() {
+      canvas = document.getElementById('gameCanvas');
+      ctx = canvas.getContext('2d');
+
+      canvas.addEventListener('click', () => {
+        if (gameRunning) triggerGameJump();
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && gameRunning) {
+          e.preventDefault();
+          triggerGameJump();
+        }
+      });
+    }
+
+    function startGame() {
+      document.getElementById('gameOverlay').classList.add('hidden');
+      gameRunning = true;
+      score = 0;
+      player.y = 150;
+      player.vy = 0;
+      collectibles = [];
+      clouds = [];
+      
+      for (let i = 0; i < 4; i++) {
+        spawnCloud(i * 180 + 50);
+      }
+      
+      requestAnimationFrame(gameLoop);
+    }
+
+    function triggerGameJump() {
+      if (!gameRunning) return;
+      player.vy = player.jumpForce;
+    }
+
+    function changeCharacter(idx) {
+      characterIdx = idx;
+    }
+
+    function activateGamePower(power) {
+      if (!gameRunning) return;
+      activePower = power;
+      powerTimer = 180; // ~3 seconds at 60fps
+      document.getElementById('gamePower').innerText = power;
+    }
+
+    function spawnCloud(xPos) {
+      clouds.push({
+        x: xPos || canvas.width + 50,
+        y: Math.random() * 180 + 30,
+        speed: Math.random() * 1 + 1.5,
+        width: Math.random() * 40 + 50
+      });
+    }
+
+    function spawnCollectible() {
+      const types = ['star', 'heart', 'banana'];
+      collectibles.push({
+        x: canvas.width + 30,
+        y: Math.random() * 200 + 40,
+        type: types[Math.floor(Math.random() * types.length)],
+        radius: 12
+      });
+    }
+
+    function gameLoop() {
+      if (!gameRunning) return;
+
+      // Update Player Physics
+      player.vy += player.gravity;
+      player.y += player.vy;
+
+      // Boundaries
+      if (player.y < player.radius) {
+        player.y = player.radius;
+        player.vy = 0;
+      }
+      if (player.y > canvas.height - player.radius) {
+        player.y = canvas.height - player.radius;
+        player.vy = 0;
+      }
+
+      // Power timer decrease
+      if (powerTimer > 0) {
+        powerTimer--;
+        if (activePower === 'BOOST') {
+          score += 2; // double points speed
+        }
+      } else {
+        activePower = 'NONE';
+        document.getElementById('gamePower').innerText = 'NONE';
+      }
+
+      // Spawn elements
+      if (Math.random() < 0.03 && collectibles.length < 5) {
+        spawnCollectible();
+      }
+
+      // Clear Canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Background Sky & Clouds
+      ctx.fillStyle = '#bae6fd';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#ffffff';
+      clouds.forEach((cloud, i) => {
+        cloud.x -= cloud.speed;
+        if (cloud.x + cloud.width < 0) {
+          cloud.x = canvas.width + 50;
+          cloud.y = Math.random() * 180 + 30;
+        }
+        ctx.beginPath();
+        ctx.arc(cloud.x, cloud.y, cloud.width / 2, 0, Math.PI * 2);
+        ctx.arc(cloud.x + 15, cloud.y - 10, cloud.width / 2.5, 0, Math.PI * 2);
+        ctx.arc(cloud.x + 30, cloud.y, cloud.width / 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Draw Collectibles
+      collectibles.forEach((c, i) => {
+        c.x -= activePower === 'BOOST' ? 4 : 2;
+
+        ctx.beginPath();
+        if (c.type === 'star') {
+          ctx.fillStyle = '#facc15';
+          ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+        } else if (c.type === 'heart') {
+          ctx.fillStyle = '#f43f5e';
+          ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+        } else {
+          ctx.fillStyle = '#eab308';
+          ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+        }
+        ctx.fill();
+
+        // Collision with player
+        const dist = Math.hypot(player.x - c.x, player.y - c.y);
+        if (dist < player.radius + c.radius) {
+          score += 10;
+          collectibles.splice(i, 1);
+          document.getElementById('gameScore').innerText = score;
+        } else if (c.x < -20) {
+          collectibles.splice(i, 1);
+        }
+      });
+
+      // Draw Player Character
+      ctx.save();
+      ctx.translate(player.x, player.y);
+
+      // Shield Aura
+      if (activePower === 'SHIELD') {
+        ctx.beginPath();
+        ctx.arc(0, 0, player.radius + 8, 0, Math.PI * 2);
+        ctx.strokeStyle = '#4ade80';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+
+      // Character Color Circle Base
+      ctx.beginPath();
+      if (characterIdx === 0) ctx.fillStyle = '#f472b6'; // Blossom Pink
+      else if (characterIdx === 1) ctx.fillStyle = '#4ade80'; // Buttercup Green
+      else ctx.fillStyle = '#fde047'; // Bubbles Yellow
+      ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#333';
+      ctx.stroke();
+
+      // Eyes
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(-6, -3, 3, 0, Math.PI * 2);
+      ctx.arc(6, -3, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Smile
+      ctx.beginPath();
+      ctx.arc(0, 4, 6, 0, Math.PI);
+      ctx.stroke();
+
+      ctx.restore();
+
+      requestAnimationFrame(gameLoop);
+    }
+  </script>
+</body>
+</html>
